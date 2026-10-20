@@ -55,12 +55,19 @@ jobs:
 
       - name: Verify signatures and identities
         run: |
-          for apk in cleanyourtv-gathin cleanyourtv-allowlist; do
-            f="$RUNNER_TEMP/$apk.apk"
-            echo "=== $apk.apk ==="
+          set -euo pipefail
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/*/ | tail -1)
+          EXPECTED=DFC6B67622D90B490E937286A4A97D1AB14F86BFDE088DE78481E419F01EDD6F
+          for apk in cleanyourtv-gathin:com.gathin.tvhome cleanyourtv-allowlist:com.ts.launcher; do
+            f="$RUNNER_TEMP/${apk%%:*}.apk"; want="${apk##*:}"
+            echo "=== ${apk%%:*}.apk (expect package $want) ==="
             stat -c 'size: %s bytes' "$f"
-            apksigner verify --verbose --print-certs "$f" | sed -n '1,20p'
-            aapt dump badging "$f" | grep -E "^package:|sdkVersion|targetSdkVersion" || true
+            "$BT/apksigner" verify --verbose --print-certs "$f"
+            got=$("$BT/apksigner" verify --print-certs "$f" | grep -m1 'SHA-256' | awk '{print $NF}' | tr -d ':' | tr '[:lower:]' '[:upper:]')
+            [ "$got" = "$EXPECTED" ] || { echo "signer mismatch: $got"; exit 1; }
+            pkg=$("$BT/aapt" dump badging "$f" | sed -n "s/^package: name='\([^']*\)'.*/\1/p")
+            [ "$pkg" = "$want" ] || { echo "package mismatch: $pkg"; exit 1; }
+            echo "verified: package=$pkg signer=$got"
           done
 
       - uses: actions/upload-artifact@v4
