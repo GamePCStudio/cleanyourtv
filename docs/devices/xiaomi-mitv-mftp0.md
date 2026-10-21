@@ -53,6 +53,20 @@ the framework but have no accepted extra value either.
 activity opens and shows its own default source. Both cases look like "switched to the wrong input"
 to the user, which is why an unmapped port must never reach the activity.
 
+## The HDMI3 row carries a CEC device's id, not the port's
+
+A soundbar/TV box on port 3 registers its own input, `…/hdmi.HDMIInputService/HDMI300004` (physical
+address `0x3000`, logical `0x04`, CEC name `p230`), whose `parentId` is `…/HW7`. The Inputs menu gives
+that device the port's row — "p230 · HDMI 3" — and opens **the device's** id, which is what wakes it
+over CEC. That id ends in `HDMI300004`, not `HW<n>`, so a table keyed by the hardware number cannot
+find it and the row fell through to the hijacked standard URI: HDMI 3 was the one row that looked
+configured and still did not switch. The fix passes the port's id alongside the device's for the
+table lookup; the standard-URI path still gets the device id so CEC activation keeps working
+elsewhere.
+
+This is not Xiaomi-specific — any box with a CEC device on a port hits it (`Vestel MT7332` in the
+code's own comment), so it is worth checking on the other two records.
+
 ## How the table was read
 
 `settings system current_source_for_tvplayer` holds the source the activity accepted, which makes

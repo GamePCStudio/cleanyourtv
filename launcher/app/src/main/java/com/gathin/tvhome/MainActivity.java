@@ -2046,10 +2046,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      *  third-party players that register a greedy filter for it, so ACTION_VIEW opens one of those instead
      *  of switching the source and never throws. Where no vendor port is mapped, or the vendor's activity is
      *  missing or not startable, the standard ACTION_VIEW is tried, then the configured `input_action`
-     *  against the same URI (XGIMI's HDMI player only answers com.xgimi.action.hdmiPlayer), then the toast. */
-    private void openInput(String inputId) {
+     *  against the same URI (XGIMI's HDMI player only answers com.xgimi.action.hdmiPlayer), then the toast.
+     *
+     *  @param inputId the input to open; a CEC device's own id, which is what wakes the device.
+     *  @param portId  the id of the HDMI port underneath it. The vendor's table is keyed by the port, and a
+     *                  CEC device's id ({@code .../HDMI300004}) carries no hardware number at all. */
+    private void openInput(String inputId, String portId) {
         Uri uri = TvContract.buildChannelUriForPassthroughInput(inputId);
-        Intent vendor = vendorInputIntent(inputId);
+        Intent vendor = vendorInputIntent(portId);
         if (vendor != null) {
             try {
                 startActivity(vendor.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
@@ -2077,11 +2081,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      *  The port comes from the hardware number at the end of the input id
      *  ({@code .../Hdmi1InputService:5.0.0;HW5} -> 5 -> 23); it is never derived from that number, because
      *  the same port is AV on one SoC and ATV on another. */
-    private Intent vendorInputIntent(String inputId) {
+    private Intent vendorInputIntent(String portId) {
         if (vendorInputComponent.isEmpty()) return null;
-        int hw = inputId.lastIndexOf("/HW");
-        if (hw < 0) return null;
-        String value = vendorInputPorts.get(inputId.substring(hw + 3).trim());
+        String hw = hardwareNumber(portId);
+        if (hw == null) return null;
+        String value = vendorInputPorts.get(hw);
         if (value == null) return null;
         ComponentName component = ComponentName.unflattenFromString(vendorInputComponent);
         if (component == null) return null;
@@ -2094,6 +2098,23 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         // Xiaomi's ExternalSourceActivity switches to the last used source when the extra is missing, so an
         // unmatched port must never reach it (docs/devices/xiaomi-mitv-ansp0-jobs.txt).
         return new Intent(vendorInputAction).setComponent(component).putExtra("input", port);
+    }
+
+    /** Whether the vendor's source activity is on this device. Where it is, its port table is the whole set
+     *  of sources the box can actually be switched to: the standard channel URI is answered there by
+     *  third-party players rather than the TV, so a port missing from the table is one that would open the
+     *  vendor's app on the wrong source. Where it is absent (real Android TV, XGIMI), nothing is hidden. */
+    private boolean vendorSwitcherPresent() {
+        if (vendorInputComponent.isEmpty()) return false;
+        ComponentName component = ComponentName.unflattenFromString(vendorInputComponent);
+        if (component == null) return false;
+        return getPackageManager().resolveActivity(new Intent(vendorInputAction).setComponent(component), 0) != null;
+    }
+
+    /** The hardware number an input id ends with, or null when it does not end with one (a CEC device). */
+    private static String hardwareNumber(String inputId) {
+        int hw = inputId.lastIndexOf("/HW");
+        return hw < 0 ? null : inputId.substring(hw + 3).trim();
     }
 
     /** Dropdown menu under the Inputs pill: HDMI ports (with connection state), AV and Live TV. */
@@ -2150,6 +2171,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 if (tim.getInputState(info.getId()) == TvInputManager.INPUT_STATE_CONNECTED) hdmiConnected++;
             }
             boolean hdmiStateBogus = hdmiPorts > 1 && hdmiConnected == hdmiPorts;
+            boolean vendorSwitcher = vendorSwitcherPresent();
             for (TvInputInfo info : inputs) {
                 if (info.getType() == TvInputInfo.TYPE_TUNER
                         && (info.getServiceInfo().applicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) != 0) {
@@ -2175,6 +2197,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 if (!info.isPassthroughInput() || info.isHidden(this)) continue;
                 // A CEC device's row is added with its port, below.
                 if (info.getParentId() != null && inputIds.contains(info.getParentId())) continue;
+                // Where the vendor's activity is the only thing that can switch a source, a port it has no
+                // value for cannot be switched at all: MiTV-MFTP0 registers a fourth HDMI hardware input that
+                // its TV player refuses (docs/devices/xiaomi-mitv-mftp0.md). Leave it out instead of toasting.
+                String hwNumber = hardwareNumber(info.getId());
+                if (vendorSwitcher && info.getType() == TvInputInfo.TYPE_HDMI
+                        && (hwNumber == null || !vendorInputPorts.containsKey(hwNumber))) continue;
                 CharSequence l = info.loadLabel(this);
                 String label = l == null ? info.getId() : l.toString();
                 boolean hdmi = info.getType() == TvInputInfo.TYPE_HDMI;
@@ -2192,9 +2220,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                         CharSequence name = device.loadCustomLabel(this);
                         if (name == null || name.length() == 0) name = named ? custom : device.loadLabel(this);
                         String deviceLabel = name == null || name.length() == 0 ? label : name + " \u00B7 " + label;
-                        final String deviceId = device.getId();
+                        final String deviceId = device.getId(), portId = info.getId();
                         int state = hdmiStateBogus ? -1 : tim.getInputState(deviceId);
-                        addInputRow(rows, popup, R.drawable.ic_input, deviceLabel, state, () -> openInput(deviceId));
+                        addInputRow(rows, popup, R.drawable.ic_input, deviceLabel, state,
+                                () -> openInput(deviceId, portId));
                     }
                     continue;
                 }
@@ -2203,7 +2232,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 final String id = info.getId();
                 int state = hdmi && hdmiStateBogus ? -1 : tim.getInputState(id);
                 addInputRow(rows, popup, hdmi ? R.drawable.ic_input : R.drawable.ic_av, label, state,
-                        () -> openInput(id));
+                        () -> openInput(id, id));
             }
         }
         // Nothing to list where there is no TvInputManager: the TV's own source panel switches inputs.

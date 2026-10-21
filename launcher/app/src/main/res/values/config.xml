@@ -69,9 +69,10 @@
          Values are keyed by the hardware number at the end of the input id (`dumpsys tv_input`): HW5 -> 23,
          HW6 -> 24, HW7 -> 25 are HDMI 1/2/3, HW2 is AV, HW1 the analogue tuner and HW0 DTMB, measured on the
          MediaTek MiTV-MFTP0 and matching the earlier MediaTek and Amlogic records. A port that is not listed
-         keeps the "Not available on this TV" behaviour: the activity rejects every other number and falls
-         back to its own default source, which looks like a switch to the wrong input. See
-         docs/devices/xiaomi-mitv-mftp0.md for the sweep that established those values, with
+         cannot be switched at all, so it is left out of the Inputs menu entirely where the vendor's activity
+         exists (MiTV-MFTP0 registers a fourth HDMI hardware input, HW8, that its TV player refuses): on such
+         a box this table is the complete list. Elsewhere an unlisted port keeps the "Not available on this TV"
+         toast. See docs/devices/xiaomi-mitv-mftp0.md for the sweep that established those values, with
          docs/devices/xiaomi-mitv-mftr0-freeguy.txt and docs/devices/xiaomi-mitv-ansp0-jobs.txt behind it. -->
     <string name="vendor_input_component" translatable="false">com.xiaomi.mitv.tvplayer/com.xiaomi.mitv.tvplayer.ExternalSourceActivity</string>
     <string name="vendor_input_action" translatable="false">com.xiaomi.mitv.tvplayer.EXTSRC_PLAY</string>
