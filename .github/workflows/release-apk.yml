@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
   # Branch-scoped so this build can run before the file exists on the default branch.
   push:
-    branches: [build/release-apk]
+    branches: [gctv]
 
 permissions:
   contents: read
