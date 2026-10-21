@@ -91,6 +91,9 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     static final float FOCUS_SCALE = 1.10f;
     /** Design size of a tile (dp); tiles shrink from here when the columns don't fit, see tileWidthPx. */
     static final float DESIGN_W_DP = 130f, DESIGN_H_DP = 130f;
+    /** The icon's edge within a design tile (dp). The tile itself has no panel, so this is what the eye
+     *  reads as the icon's size; the focus zoom is allowed to push it to 88 of the 130. */
+    static final float ICON_SHARE_DP = 80f;
 
     /**
      * Tile width for a grid of this inner width: the cell minus room for the focus zoom and the glass
@@ -363,10 +366,10 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         cardLp.width = w;
         cardLp.height = h;
         card.setLayoutParams(cardLp);
-        // The icon keeps its share of the tile (64dp of the 130dp design) as the columns shrink it below that.
+        // The icon keeps its share of the tile (80dp of the 130dp design) as the columns shrink it below that.
         View icon = v.findViewById(R.id.icon);
         ViewGroup.LayoutParams iconLp = icon.getLayoutParams();
-        iconLp.width = iconLp.height = Math.round(w * 64f / DESIGN_W_DP);
+        iconLp.width = iconLp.height = Math.round(w * ICON_SHARE_DP / DESIGN_W_DP);
         icon.setLayoutParams(iconLp);
         View name = v.findViewById(R.id.name);
         ViewGroup.MarginLayoutParams nameLp = (ViewGroup.MarginLayoutParams) name.getLayoutParams();
@@ -407,7 +410,8 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         h.card.setScaleX(focused && animations ? focusScale() : 1f);
         h.card.setScaleY(focused && animations ? focusScale() : 1f);
         h.card.setTranslationY(focused && advancedEffects ? -4f * ctx.getResources().getDisplayMetrics().density : 0f);
-        h.card.setTranslationZ(focused && advancedEffects ? 8f * ctx.getResources().getDisplayMetrics().density : 0f);
+        // No translationZ: the tile has no panel, and an outline-shaped elevation would draw a rectangle of
+        // shadow around the icon, which reads as the frame this layout no longer has.
         // The tile holds the app's icon. Its banner stays in the Entry for the top shelf and the ambient glow,
         // but cropped into a square it is a blur, and the name under the tile already says what the app is.
         h.icon.setImageDrawable(e.icon);

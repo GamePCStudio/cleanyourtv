@@ -1064,10 +1064,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         Rect r = tileRect;
         r.set(0, 0, card.getWidth(), card.getHeight());
         root.offsetDescendantRectToMyCoords(card, r);
+        // The tile has no panel of its own, so the highlight belongs on the icon inside it rather than on the
+        // cell: a slab the width of the cell reads as the frame the layout no longer draws. The icon is
+        // centred, so the cell's centre is still the right anchor.
+        View face = card.findViewById(R.id.icon);
+        float boxW = face != null && face.getWidth() > 0 ? face.getWidth() : card.getWidth();
+        float boxH = face != null && face.getHeight() > 0 ? face.getHeight() : card.getHeight();
         float pad = 6f * density;        // matches GlassView's glow inset
         float scale = adapter.focusScale();
-        float w = card.getWidth() * scale + 2 * pad;
-        float h = card.getHeight() * scale + 2 * pad;
+        float w = boxW * scale + 2 * pad;
+        float h = boxH * scale + 2 * pad;
         float x = r.exactCenterX() - w / 2f;
         float y = r.exactCenterY() - h / 2f - (advancedEffects ? 4f * density : 0f);
 
@@ -1137,8 +1143,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (card == null || card.getWidth() <= 0 || !card.isFocused()) return;
         float pad = 6f * density;
         float scale = adapter.focusScale();
-        int w = (int) (card.getWidth() * scale + 2 * pad);
-        int h = (int) (card.getHeight() * scale + 2 * pad);
+        // Same box as onTileFocused: the icon inside the cell, not the cell.
+        View face = card.findViewById(R.id.icon);
+        float boxW = face != null && face.getWidth() > 0 ? face.getWidth() : card.getWidth();
+        float boxH = face != null && face.getHeight() > 0 ? face.getHeight() : card.getHeight();
+        int w = (int) (boxW * scale + 2 * pad);
+        int h = (int) (boxH * scale + 2 * pad);
         if (!glassShown || card.getWidth() != glassCardW || glass.getWidth() != w || glass.getHeight() != h) {
             onTileFocused(pos, card);
         }
