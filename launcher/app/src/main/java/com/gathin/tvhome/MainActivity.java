@@ -2041,13 +2041,24 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
     }
 
-    /** Switches to a passthrough input (HDMI, AV). The standard way is ACTION_VIEW on its channel URI,
-     *  which the Live TV app handles; where nothing takes that, the configured `input_action` is sent
-     *  with the same URI instead (XGIMI's HDMI player only answers com.xgimi.action.hdmiPlayer), and where
-     *  that is not configured either, the vendor's own source activity is started with the port number
-     *  (Xiaomi). */
+    /** Switches to a passthrough input (HDMI, AV). The vendor's own source activity goes first when this
+     *  input maps to a port it knows: on the Xiaomi boxes the standard channel URI is answered, but by
+     *  third-party players that register a greedy filter for it, so ACTION_VIEW opens one of those instead
+     *  of switching the source and never throws. Where no vendor port is mapped, or the vendor's activity is
+     *  missing or not startable, the standard ACTION_VIEW is tried, then the configured `input_action`
+     *  against the same URI (XGIMI's HDMI player only answers com.xgimi.action.hdmiPlayer), then the toast. */
     private void openInput(String inputId) {
         Uri uri = TvContract.buildChannelUriForPassthroughInput(inputId);
+        Intent vendor = vendorInputIntent(inputId);
+        if (vendor != null) {
+            try {
+                startActivity(vendor.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                return;
+            } catch (Exception ignored) {
+                // A vendor component that is absent from this firmware, or exported only to the shell, must
+                // still leave Home alive and still fall through to the standard path below.
+            }
+        }
         Intent view = new Intent(Intent.ACTION_VIEW).setDataAndType(uri, "vnd.android.cursor.item/channel")
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         try {
@@ -2055,17 +2066,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             return;
         } catch (ActivityNotFoundException e) {
             if (inputAction.isEmpty()) {
-                Intent vendor = vendorInputIntent(inputId);
-                if (vendor != null) {
-                    try {
-                        startActivity(vendor.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-                    } catch (Exception ignored) {
-                        // Some vendors' source activity is not exported: `am start` from a shell gets through,
-                        // a normal app does not. Home must survive that, so it is a toast and not a crash.
-                        Toast.makeText(this, R.string.not_available, Toast.LENGTH_SHORT).show();
-                    }
-                    return;
-                }
                 Toast.makeText(this, R.string.not_available, Toast.LENGTH_SHORT).show();
                 return;
             }
