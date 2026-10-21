@@ -2219,6 +2219,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 String label = l == null ? info.getId() : l.toString();
                 boolean hdmi = info.getType() == TvInputInfo.TYPE_HDMI;
                 if (hdmi && !label.toUpperCase(Locale.ROOT).contains("HDMI")) label = "HDMI " + label;
+                // The framework names the composite socket "Composite"; on a TV it is the AV input, which is
+                // what the vendor's own source menu and the label on the back of the set both call it.
+                if (info.getType() == TvInputInfo.TYPE_COMPOSITE) label = "AV";
                 CharSequence custom = info.loadCustomLabel(this);
                 boolean named = custom != null && custom.length() > 0 && !custom.toString().equals(label);
                 if (!hdmi && rows.getChildCount() > 0 && !sawNonHdmi) addSeparator(rows);
