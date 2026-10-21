@@ -35,6 +35,8 @@ is ignored, and a file that doesn't parse is ignored as a whole, so a theme can 
 | `app_labels` | list of `"package=Name"` | A tile's name instead of the app's own (MagentaTV as `com.telekom.onetv.tv.pl=TV`) |
 | `app_banners` | list of `"package=banner_name"` | A tile's artwork from a `banner_*` drawable bundled with the launcher (`banner_tv`: magenta with the Live TV glyph) |
 | `input_action` | string | Action sent with an HDMI/AV row's channel URI when nothing handles the standard `VIEW` (XGIMI: `com.xgimi.action.hdmiPlayer`) |
+| `vendor_input_component`, `vendor_input_action` | string | Source activity started instead, when `input_action` is empty and the standard `VIEW` resolves to nothing (Xiaomi: `com.xiaomi.mitv.tvplayer/com.xiaomi.mitv.tvplayer.ExternalSourceActivity` + `com.xiaomi.mitv.tvplayer.EXTSRC_PLAY`) |
+| `vendor_input_ports` | list of `"HW=value"` | The INTEGER extra named `input` that port's hardware number needs, from `dumpsys tv_input` (`5=23` for HDMI 1 on both Xiaomi SoCs; a port not listed keeps the "Not available" toast) |
 | `columns` | 1 to 8 | Tiles per row; tiles shrink to fit from 5 up |
 | `rows_below_dock` | 0 to 3 | Grid rows left visible under the dock; tiles shrink if the dock, its title and that many rows would not fit the screen height |
 | `dock_title` | bool | The focused dock app's name in large type above the dock (`true`); `false` keeps only the glow |

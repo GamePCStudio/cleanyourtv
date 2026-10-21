@@ -99,6 +99,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private String liveTvPkg;
     private String liveTvAction;
     private String inputAction;
+    /** Vendor source activity, its action, and the integer each port's extra needs (config.xml, vendor_input_*). */
+    private String vendorInputComponent;
+    private String vendorInputAction;
+    private Map<String, String> vendorInputPorts = Collections.emptyMap();
     private String sourcePanelService;
     private String sourcePanelAction;
 
@@ -287,6 +291,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         liveTvPkg = cfg.liveTvPackage;
         liveTvAction = cfg.liveTvAction;
         inputAction = cfg.inputAction;
+        vendorInputComponent = cfg.vendorInputComponent;
+        vendorInputAction = cfg.vendorInputAction;
+        vendorInputPorts = cfg.vendorInputPorts;
         sourcePanelService = cfg.sourcePanelService;
         sourcePanelAction = cfg.sourcePanelAction;
 
@@ -2036,7 +2043,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     /** Switches to a passthrough input (HDMI, AV). The standard way is ACTION_VIEW on its channel URI,
      *  which the Live TV app handles; where nothing takes that, the configured `input_action` is sent
-     *  with the same URI instead (XGIMI's HDMI player only answers com.xgimi.action.hdmiPlayer). */
+     *  with the same URI instead (XGIMI's HDMI player only answers com.xgimi.action.hdmiPlayer), and where
+     *  that is not configured either, the vendor's own source activity is started with the port number
+     *  (Xiaomi). */
     private void openInput(String inputId) {
         Uri uri = TvContract.buildChannelUriForPassthroughInput(inputId);
         Intent view = new Intent(Intent.ACTION_VIEW).setDataAndType(uri, "vnd.android.cursor.item/channel")
@@ -2046,11 +2055,39 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             return;
         } catch (ActivityNotFoundException e) {
             if (inputAction.isEmpty()) {
+                Intent vendor = vendorInputIntent(inputId);
+                if (vendor != null) {
+                    open(vendor);
+                    return;
+                }
                 Toast.makeText(this, R.string.not_available, Toast.LENGTH_SHORT).show();
                 return;
             }
         }
         open(new Intent(inputAction).setDataAndType(uri, "vnd.android.cursor.item/channel"));
+    }
+
+    /** The vendor's source intent for this input, or null to keep the "Not available on this TV" toast.
+     *  The port comes from the hardware number at the end of the input id
+     *  ({@code .../Hdmi1InputService:5.0.0;HW5} -> 5 -> 23); it is never derived from that number, because
+     *  the same port is AV on one SoC and ATV on another. */
+    private Intent vendorInputIntent(String inputId) {
+        if (vendorInputComponent.isEmpty()) return null;
+        int hw = inputId.lastIndexOf("/HW");
+        if (hw < 0) return null;
+        String value = vendorInputPorts.get(inputId.substring(hw + 3).trim());
+        if (value == null) return null;
+        ComponentName component = ComponentName.unflattenFromString(vendorInputComponent);
+        if (component == null) return null;
+        int port;
+        try {
+            port = Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+        // Xiaomi's ExternalSourceActivity switches to the last used source when the extra is missing, so an
+        // unmatched port must never reach it (docs/devices/xiaomi-mitv-ansp0-jobs.txt).
+        return new Intent(vendorInputAction).setComponent(component).putExtra("input", port);
     }
 
     /** Dropdown menu under the Inputs pill: HDMI ports (with connection state), AV and Live TV. */
