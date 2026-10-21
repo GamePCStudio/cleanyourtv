@@ -2059,7 +2059,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 if (vendor != null) {
                     try {
                         startActivity(vendor.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-                    } catch (Exception e) {
+                    } catch (Exception ignored) {
                         // Some vendors' source activity is not exported: `am start` from a shell gets through,
                         // a normal app does not. Home must survive that, so it is a toast and not a crash.
                         Toast.makeText(this, R.string.not_available, Toast.LENGTH_SHORT).show();
