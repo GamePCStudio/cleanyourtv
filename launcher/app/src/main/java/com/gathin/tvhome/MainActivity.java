@@ -2198,11 +2198,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 // A CEC device's row is added with its port, below.
                 if (info.getParentId() != null && inputIds.contains(info.getParentId())) continue;
                 // Where the vendor's activity is the only thing that can switch a source, a port it has no
-                // value for cannot be switched at all: MiTV-MFTP0 registers a fourth HDMI hardware input that
-                // its TV player refuses (docs/devices/xiaomi-mitv-mftp0.md). Leave it out instead of toasting.
+                // value for cannot be switched at all, and that covers the analogue rows as much as HDMI:
+                // MiTV-MFTP0 registers a fourth HDMI input its TV player refuses, and its Component input has
+                // no value at all, so the standard URI is answered by a video player app instead of the TV
+                // (docs/devices/xiaomi-mitv-mftp0.md). Leave such a port out of the menu rather than offer a
+                // row that opens someone else's app.
                 String hwNumber = hardwareNumber(info.getId());
-                if (vendorSwitcher && info.getType() == TvInputInfo.TYPE_HDMI
-                        && (hwNumber == null || !vendorInputPorts.containsKey(hwNumber))) continue;
+                if (vendorSwitcher && (hwNumber == null || !vendorInputPorts.containsKey(hwNumber))) continue;
                 CharSequence l = info.loadLabel(this);
                 String label = l == null ? info.getId() : l.toString();
                 boolean hdmi = info.getType() == TvInputInfo.TYPE_HDMI;

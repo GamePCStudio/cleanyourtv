@@ -49,6 +49,13 @@ externally switchable source. Same conclusion as `xiaomi-mitv-mftr0-freeguy.txt`
 read as evidence of a fourth physical connector. VGA (HW4) and component (HW3) are registered in
 the framework but have no accepted extra value either.
 
+What an unmapped row actually does, measured from the launcher: the component row's standard channel
+URI resolved to `com.clouddrive2.CloudDrive2/.ExternalOpenDispatchActivity`, which chained to its own
+`ExternalPlayerActivity` — a cloud-drive app opened instead of the TV's source, exactly like the HDMI
+hijack above. So the rule that hides unmapped ports cannot be limited to `TYPE_HDMI`: on this box it
+has to cover the analogue rows too, and the menu then holds HDMI 1/2/3 and AV, the four sources with
+a value in the table.
+
 `EXTSRC_PLAY` with **no** extra leaves no session at all, and a rejected value does not throw — the
 activity opens and shows its own default source. Both cases look like "switched to the wrong input"
 to the user, which is why an unmapped port must never reach the activity.
