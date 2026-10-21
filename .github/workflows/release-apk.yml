@@ -48,6 +48,8 @@ jobs:
                 -PreleaseKeystorePassword="$STORE_PASSWORD"
                 -PreleaseKeyAlias=release
                 -PreleaseKeyPassword="$KEY_PASSWORD")
+          # The unit tests gate the build: a branch that builds but fails TileFitTest is not shippable.
+          ./gradlew --no-daemon testReleaseUnitTest "${sign[@]}"
           ./gradlew --no-daemon clean assembleRelease "${sign[@]}"
           cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/cleanyourtv-gathin.apk"
           ./gradlew --no-daemon clean assembleRelease "${sign[@]}" -PlauncherApplicationId=com.ts.launcher
