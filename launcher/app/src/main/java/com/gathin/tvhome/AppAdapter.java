@@ -92,8 +92,8 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     /** Design size of a tile (dp); tiles shrink from here when the columns don't fit, see tileWidthPx. */
     static final float DESIGN_W_DP = 130f, DESIGN_H_DP = 130f;
     /** The icon's edge within a design tile (dp). The tile itself has no panel, so this is what the eye
-     *  reads as the icon's size; the focus zoom is allowed to push it to 88 of the 130. */
-    static final float ICON_SHARE_DP = 80f;
+     *  reads as the icon's size; the focus zoom is allowed to push it to 101 of the 130. */
+    static final float ICON_SHARE_DP = 92f;
 
     /**
      * Tile width for a grid of this inner width: the cell minus room for the focus zoom and the glass
@@ -366,7 +366,8 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         cardLp.width = w;
         cardLp.height = h;
         card.setLayoutParams(cardLp);
-        // The icon keeps its share of the tile (80dp of the 130dp design) as the columns shrink it below that.
+        // The icon keeps its share of the tile (ICON_SHARE_DP of the 130dp design) as the columns shrink it
+        // below that.
         View icon = v.findViewById(R.id.icon);
         ViewGroup.LayoutParams iconLp = icon.getLayoutParams();
         iconLp.width = iconLp.height = Math.round(w * ICON_SHARE_DP / DESIGN_W_DP);
