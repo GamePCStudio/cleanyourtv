@@ -60,6 +60,25 @@
          (XGIMI projectors: com.xgimi.action.hdmiPlayer). Leave empty to omit. -->
     <string name="input_action" translatable="false"></string>
 
+    <!-- Some firmware registers its ports but answers nothing at all to ACTION_VIEW on the passthrough URI, so
+         the Inputs rows list the ports and do nothing when clicked (Xiaomi/Fengmi sets with PatchWall: the TV
+         player switches through its own activity instead, and that activity needs an INTEGER extra, called
+         "input", naming the port). The component below is then started with that extra, only after the standard
+         intent has already failed, so a TV that does answer it is untouched. Values are keyed by the hardware
+         number at the end of the input id (`dumpsys tv_input`): HW5 -> 23, HW6 -> 24, HW7 -> 25 are HDMI 1/2/3
+         on both the Amlogic (MiTV-ANSP0) and the MediaTek (MiTV-MFTR0) sets, HW1 and HW2 are AV on the two of
+         them. Empty component, or a port that is not listed, keeps the old "Not available on this TV" behaviour.
+         See docs/devices/xiaomi-mitv-mftr0-freeguy.txt and docs/devices/xiaomi-mitv-ansp0-jobs.txt. -->
+    <string name="vendor_input_component" translatable="false">com.xiaomi.mitv.tvplayer/com.xiaomi.mitv.tvplayer.ExternalSourceActivity</string>
+    <string name="vendor_input_action" translatable="false">com.xiaomi.mitv.tvplayer.EXTSRC_PLAY</string>
+    <string-array name="vendor_input_ports">
+        <item>1=2</item>
+        <item>2=2</item>
+        <item>5=23</item>
+        <item>6=24</item>
+        <item>7=25</item>
+    </string-array>
+
     <!-- Remote buttons that open Settings, by Linux scancode (HOME_KEY_SERVICE=1 build-and-install.sh). Remotes
          that send KEYCODE_SETTINGS need no entry. Some send a code Android does not map: the Xiaomi/Fengmi
          projector remote's gear button is scancode 384 (KEY_TAPE). Find yours with
@@ -106,7 +125,7 @@
     <!-- The dock as its own row: a lighter band, no names under the tiles, parked low on the screen with the top
          shelf above it. false makes the dock apps simply the first tiles of one plain grid (still in dock_apps
          order, no empty slots), with names under every tile and the glow behind every focused tile. -->
-    <bool name="dock_row">true</bool>
+    <bool name="dock_row">false</bool>
     <!-- A reorder button (two arrows) in the top bar. Off by default: reordering is also in the Settings
          button's long-press menu, so it needs no extra button on screen. -->
     <bool name="reorder_button">false</bool>
@@ -119,9 +138,9 @@
          for bigger tiles when rows_below_dock is 2 or 3. -->
     <bool name="dock_title">true</bool>
 
-    <!-- Tiles per row in the grid; the dock always has this many slots. Tiles are 180dp wide at 4 columns and
-         shrink to fit from 5 up (about 144dp at 5, 117dp at 6 on a 1080p TV). -->
-    <integer name="columns">4</integer>
+    <!-- Tiles per row in the grid; the dock always has this many slots. Tiles are 130dp square at 6 columns and
+         shrink to fit if the columns are wider than that on this TV. -->
+    <integer name="columns">6</integer>
 
     <!-- Basic motion is on; advanced effects are opt-in in the launcher's own Settings screen. -->
     <bool name="animations">true</bool>

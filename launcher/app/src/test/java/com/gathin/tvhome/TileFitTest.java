@@ -38,10 +38,13 @@ public class TileFitTest {
     }
 
     @Test
-    public void oneRowUnderATitledDockFits() {
+    public void oneRowUnderATitledDockStopsAtTheHeightFloor() {
+        // A square tile is as tall as it is wide, so the dock title, the dock and one row no longer fit 846 px:
+        // the tiles take the MIN_HEIGHT_FIT size they may not go below and the row runs off the bottom, scrollable.
         int w = AppAdapter.tileWidthPx(INNER, GRID_H, 4, 1, true, true, D);
         assertTrue(w < AppAdapter.tileWidthPx(INNER, 4, D));
-        assertTrue(height(w, 1, true) <= GRID_H + 2);
+        assertEquals(Math.round(AppAdapter.tileWidthPx(INNER, 4, D) * AppAdapter.MIN_HEIGHT_FIT), w);
+        assertTrue(height(w, 1, true) > GRID_H);
     }
 
     @Test
@@ -54,14 +57,24 @@ public class TileFitTest {
     }
 
     @Test
-    public void plainGridFitsFourRowsAtSixColumns() {
-        // dock_row false, rows_below_dock 3: the first row and 3 more under a 12dp top margin.
-        int w = AppAdapter.tileWidthPx(INNER, GRID_H, 6, 3, true, false, D);
-        int itemH = AppAdapter.itemHeightPx(AppAdapter.tileHeightPx(w), false, D);
-        int needed = itemH * 4 + Math.round((AppAdapter.TOP_ROOM_DP + AppAdapter.COMPACT_BOTTOM_ROOM_DP) * D);
-        assertTrue(needed + " > " + GRID_H, needed <= GRID_H + 2);
-        // With the compact spacing the width limit decides, not the height: no extra whitespace between tiles.
+    public void plainGridFitsThreeRowsAtSixColumns() {
+        // dock_row false, rows_below_dock 1: the first row and one more under a 12dp top margin, at the size
+        // the six columns allow.
+        int w = AppAdapter.tileWidthPx(INNER, GRID_H, 6, 1, true, false, D);
         assertEquals(AppAdapter.tileWidthPx(INNER, 6, D), w);
+        int itemH = AppAdapter.itemHeightPx(AppAdapter.tileHeightPx(w), false, D);
+        int needed = itemH * 2 + Math.round((AppAdapter.TOP_ROOM_DP + AppAdapter.COMPACT_BOTTOM_ROOM_DP) * D);
+        assertTrue(needed + " > " + GRID_H, needed <= GRID_H + 2);
+        // Asking for one more row shrinks the tiles to the 85% floor, and that still fits three rows exactly.
+        int floor = Math.round(AppAdapter.tileWidthPx(INNER, 6, D) * AppAdapter.MIN_HEIGHT_FIT);
+        assertEquals(floor, AppAdapter.tileWidthPx(INNER, GRID_H, 6, 2, true, false, D));
+        int compactH = AppAdapter.itemHeightPx(floor, false, D);
+        assertTrue(compactH * 3 + Math.round((AppAdapter.TOP_ROOM_DP + AppAdapter.COMPACT_BOTTOM_ROOM_DP) * D)
+                <= GRID_H + 2);
+        // A fourth row would need tiles smaller than the floor allows: it runs off the bottom and scrolls.
+        assertEquals(floor, AppAdapter.tileWidthPx(INNER, GRID_H, 6, 3, true, false, D));
+        assertTrue(compactH * 4 + Math.round((AppAdapter.TOP_ROOM_DP + AppAdapter.COMPACT_BOTTOM_ROOM_DP) * D)
+                > GRID_H + 2);
     }
 
     @Test
